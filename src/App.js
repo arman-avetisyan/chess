@@ -47,7 +47,7 @@ const App = () => {
     // useEffect to set up Stockfish as a Web Worker when the component first loads (mounts)
     useEffect(() => {
         // Create a new Web Worker for Stockfish from the JavaScript file we downloaded
-        const stockfishWorker = new Worker("/js/stockfish-16.1-lite-single.js");
+        const stockfishWorker = new Worker(`${process.env.PUBLIC_URL}/js/stockfish-16.1-lite-single.js`);
         setStockfish(stockfishWorker); // Save this worker instance in state for access elsewhere in the component
 
         // Listen for messages sent back from Stockfish
