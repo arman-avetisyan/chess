@@ -26,8 +26,15 @@ code {
 }
 
 .analize {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    width: 100%;
+    width: 30%;
+    font-size: small;
+}
+
+.list {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.item {
+    margin-bottom: 5px
 }

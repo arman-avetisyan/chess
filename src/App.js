@@ -1,126 +1,7 @@
 import React, { useState, useEffect } from 'react';          // Import React and useState to manage state
 import { Chessboard } from 'react-chessboard';    // Import Chessboard component from react-chessboard
 import { Chess } from 'chess.js';                 // Import Chess logic from chess.js
-
-// Function to extract best move and evaluation from Stockfish's message
-const getEvaluation = (message, turn) => {
-    let result = { bestMove: "", evaluation: "" }; // Initialize with default values
-
-    // Check for "bestmove" in the message to get the best move
-    if (message.startsWith("bestmove")) {
-        result.bestMove = message.split(" ")[1];
-    }
-
-    // Check for "info score" message to get the evaluation
-    if (message.includes("info") && message.includes("score")) {
-        const scoreParts = message.split(" ");
-        const scoreIndex = scoreParts.indexOf("score") + 2; // "cp" or "mate" is two words after "score"
-
-        if (scoreParts[scoreIndex - 1] === "cp") {
-            // Extract centipawn evaluation and adjust based on turn
-            let score = parseInt(scoreParts[scoreIndex], 10);
-            if (turn !== "b") {
-                score = -score; // Invert score if it was Black's turn
-            }
-            result.evaluation = `${score / 100}`; // Convert centipawns to pawns
-
-        } else if (scoreParts[scoreIndex - 1] === "mate") {
-            // Extract mate score if available
-            const mateIn = parseInt(scoreParts[scoreIndex], 10);
-            result.evaluation = `Mate in ${Math.abs(mateIn)}`;
-        }
-    }
-
-    return result;
-};
-
-// Define the custom pieces logic
-const customPieces = {
-    wP: ({ squareWidth }) => (
-        <img
-            src={`${process.env.PUBLIC_URL}/img/pieces/wP.svg`}
-            style={{ width: squareWidth, height: squareWidth }}
-            alt="White Pawn"
-        />
-    ),
-    wN: ({ squareWidth }) => (
-        <img
-            src={`${process.env.PUBLIC_URL}/img/pieces/wN.svg`}
-            style={{ width: squareWidth, height: squareWidth }}
-            alt="White Knight"
-        />
-    ),
-    wB: ({ squareWidth }) => (
-        <img
-            src={`${process.env.PUBLIC_URL}/img/pieces/wB.svg`}
-            style={{ width: squareWidth, height: squareWidth }}
-            alt="White Bishop"
-        />
-    ),
-    wR: ({ squareWidth }) => (
-        <img
-            src={`${process.env.PUBLIC_URL}/img/pieces/wR.svg`}
-            style={{ width: squareWidth, height: squareWidth }}
-            alt="White Rook"
-        />
-    ),
-    wQ: ({ squareWidth }) => (
-        <img
-            src={`${process.env.PUBLIC_URL}/img/pieces/wQ.svg`}
-            style={{ width: squareWidth, height: squareWidth }}
-            alt="White Queen"
-        />
-    ),
-    wK: ({ squareWidth }) => (
-        <img
-            src={`${process.env.PUBLIC_URL}/img/pieces/wK.svg`}
-            style={{ width: squareWidth, height: squareWidth }}
-            alt="White King"
-        />
-    ),
-    bP: ({ squareWidth }) => (
-        <img
-            src={`${process.env.PUBLIC_URL}/img/pieces/bP.svg`}
-            style={{ width: squareWidth, height: squareWidth }}
-            alt="Black Pawn"
-        />
-    ),
-    bN: ({ squareWidth }) => (
-        <img
-            src={`${process.env.PUBLIC_URL}/img/pieces/bN.svg`}
-            style={{ width: squareWidth, height: squareWidth }}
-            alt="Black Knight"
-        />
-    ),
-    bB: ({ squareWidth }) => (
-        <img
-            src={`${process.env.PUBLIC_URL}/img/pieces/bB.svg`}
-            style={{ width: squareWidth, height: squareWidth }}
-            alt="Black Bishop"
-        />
-    ),
-    bR: ({ squareWidth }) => (
-        <img
-            src={`${process.env.PUBLIC_URL}/img/pieces/bR.svg`}
-            style={{ width: squareWidth, height: squareWidth }}
-            alt="Black Rook"
-        />
-    ),
-    bQ: ({ squareWidth }) => (
-        <img
-            src={`${process.env.PUBLIC_URL}/img/pieces/bQ.svg`}
-            style={{ width: squareWidth, height: squareWidth }}
-            alt="Black Queen"
-        />
-    ),
-    bK: ({ squareWidth }) => (
-        <img
-            src={`${process.env.PUBLIC_URL}/img/pieces/bK.svg`}
-            style={{ width: squareWidth, height: squareWidth }}
-            alt="Black King"
-        />
-    ),
-};
+import { customPieces } from './customPieces.js';
 
 // Main App component
 const App = () => {
@@ -128,9 +9,11 @@ const App = () => {
     const [game, setGame] = useState(new Chess());
     // Initialize state for the Stockfish Web Worker instance
     const [stockfish, setStockfish] = useState(null);
-    // Initialize state for storing Stockfish's suggested best move
-    const [bestMove, setBestMove] = useState("");
-    const [evaluation, setEvaluation] = useState(""); // State to store Stockfish's evaluation
+    const [currentLines, setCurrentLines] = useState([]); // Holds evaluations for the current move
+    const [previousLines, setPreviousLines] = useState([]); // Holds evaluations for the previous move
+    const [bestEvaluation, setBestEvaluation] = useState(null); // Stores the eval value of the best move
+    const [lastMove, setLastMove] = useState(null); // Stores the last move played by the user
+    const [moveCategory, setMoveCategory] = useState(""); // Stores the category of the user's move
     // State variables for tracking the last move's from and to squares
     const [fromSquare, setFromSquare] = useState(null); // Holds the starting square of the last move
     const [toSquare, setToSquare] = useState(null);     // Holds the destination square of the last move
@@ -143,27 +26,85 @@ const App = () => {
         const stockfishWorker = new Worker(`${process.env.PUBLIC_URL}/js/stockfish-16.1-lite-single.js`);
         setStockfish(stockfishWorker); // Save this worker instance in state for access elsewhere in the component
 
-        // Listen for messages sent back from Stockfish
-        stockfishWorker.onmessage = (event) => {
-            const message = event.data; // Capture the message data from Stockfish
-            // Check if Stockfish has sent a "bestmove" response
-            if (message.startsWith("bestmove")) {
-                const move = message.split(" ")[1]; // Extract the best move from the message
-                setBestMove(move); // Save the best move in state to display on the screen
-            }
-        };
-
         // Clean up the worker when the component is removed from the screen (unmounted)
         return () => {
             stockfishWorker.terminate(); // Terminates the worker to free up resources
         };
     }, []); // Empty dependency array means this runs only once when the component mounts
 
+    const getEvaluation = (fen) => {
+        return new Promise((resolve) => {
+            const lines = []; // Array to store the top 3 lines of evaluations
+            stockfish.postMessage("setoption name MultiPV value 3"); // Set Stockfish to calculate top 3 PVs
+            stockfish.postMessage(`position fen ${fen}`); // Set the position to the current FEN
+            stockfish.postMessage("go depth 15"); // Instruct Stockfish to calculate up to a depth of 12
+
+            const isBlackTurn = fen.split(" ")[1] === "b"; // Check if it's Black's turn from the FEN string
+
+            // Handle messages from Stockfish
+            stockfish.onmessage = (event) => {
+                const message = event.data;
+
+                // Check for "bestmove" in the message to get the best move
+                if (message.startsWith("bestmove")) {
+                    const bestMove = message.split(" ")[1];
+
+                    if (bestMove) {
+                        // Extract starting and ending squares from the best move
+                        const fromSquare = bestMove.slice(0, 2); // First two characters
+                        const toSquare = bestMove.slice(2, 4);   // Last two characters
+                        setBestMoveArrow([[fromSquare, toSquare]]); // Set arrow for best move
+                    }
+                }
+
+                // Only process messages that contain evaluations at depth 12
+                if (message.startsWith("info depth 15")) {
+                    // Check for "info score" message to get the evaluation
+                    if (message.includes("info") && message.includes("score")) {
+                        const scoreParts = message.split(" ");
+                        const scoreIndex = scoreParts.indexOf("score") + 2; // "cp" or "mate" is two words after "score"
+                        const moves = message.split(" pv ")[1].split(" "); // Split moves into an array
+
+                        if (scoreParts[scoreIndex - 1] === "cp") {
+                            // Extract centipawn evaluation and adjust based on turn
+                            let evalScore = parseInt(scoreParts[scoreIndex], 10) / 100;
+                            // Flip the evaluation score if it's Black's turn
+                            if (isBlackTurn) {
+                                evalScore = -evalScore;
+                            }
+                            // Add the evaluation and moves to the lines array
+                            lines.push({ eval: evalScore, moves });
+                        } else if (scoreParts[scoreIndex - 1] === "mate") {
+                            // Extract mate score if available
+                            const mateIn = parseInt(scoreParts[scoreIndex], 10);
+                            lines.push({ eval: `Mate in ${Math.abs(mateIn)}`, moves });
+                        }
+
+                        // Stop and resolve once we have the top 3 lines at depth 15
+                        if (lines.length === 3) {
+                            stockfish.postMessage("stop"); // Stop Stockfish once we have 3 evaluations
+
+                            // Sort lines based on whose turn it is
+                            lines.sort((a, b) => (isBlackTurn ? a.eval - b.eval : b.eval - a.eval));
+
+                            // Update previousLines with the current currentLines before refreshing currentLines
+                            setPreviousLines(currentLines);
+                            // Update currentLines with the new sorted evaluations
+                            setCurrentLines(lines);
+                            // Set bestEvaluation to the eval value of the top line for comparison
+                            setBestEvaluation(lines[0].eval);
+                            resolve(lines); // Resolve the promise with the top 3 lines
+                        }
+                    }
+                }
+            };
+        });
+    };
+
     // Function to handle piece movement on the chessboard
-    const onDrop = (sourceSquare, targetSquare, piece) => {
+    const onDrop = async (sourceSquare, targetSquare, piece) => {
         // Create a copy of the current game state using FEN notation
         const gameCopy = new Chess(game.fen());
-        console.log(piece, typeof piece);
         try {
             // Attempt to make the move on the game copy
             const move = gameCopy.move({
@@ -179,29 +120,12 @@ const App = () => {
 
             // If the move is valid, update the game state with the new position
             setGame(gameCopy);
-
             // Update last move states for highlighting
             setFromSquare(sourceSquare); // Update the starting square of the last move
             setToSquare(targetSquare);   // Update the destination square of the last move
+            setLastMove(`${sourceSquare}${targetSquare}`); // Save the last move played
 
-            // Send the new position to Stockfish for analysis
-            if (stockfish) {
-                stockfish.postMessage(`position fen ${gameCopy.fen()}`); // Send the board position in FEN format
-                stockfish.postMessage("go depth 15"); // Instruct Stockfish to analyze the position up to a depth of 15 moves
-
-                // Listen for Stockfish messages and update best move and evaluation
-                stockfish.onmessage = (event) => {
-                    const { bestMove, evaluation } = getEvaluation(event.data, game.turn());
-                    if (bestMove) {
-                        setBestMove(bestMove);
-                        // Extract starting and ending squares from the best move
-                        const fromSquare = bestMove.slice(0, 2); // First two characters
-                        const toSquare = bestMove.slice(2, 4);   // Last two characters
-                        setBestMoveArrow([[fromSquare, toSquare]]); // Set arrow for best move
-                    }
-                    if (evaluation) setEvaluation(evaluation);
-                };
-            }
+            await getEvaluation(gameCopy.fen());
 
             return true; // Return true to indicate a valid move
         } catch (error) {
@@ -237,11 +161,16 @@ const App = () => {
                     customArrows={bestMoveArrow} // Pass the best move arrow to render on the board
                     customArrowColor={"rgba(67, 160, 71, 0.8)"} // Set the custom arrow color
                 />
-                <div className='analize'>
-                    {/* Display Stockfish's suggested best move or show "Calculating..." if no move is available yet */}
-                    <h3>Best Move: {bestMove || "..."}</h3>
-                    <h3>Evaluation: {evaluation || "..."}</h3>
-                </div>
+            </div>
+            <div className='analize'>
+                <ul className='list'>
+                    {currentLines.map((line, index) => (
+                        <li key={index} className='item'>
+                            <strong>Line {index + 1}:</strong> {line.eval} <br />
+                            <strong>Moves:</strong> {line.moves.join(" ")}
+                        </li>
+                    ))}
+                </ul>
             </div>
         </div>
     );
