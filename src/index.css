@@ -26,8 +26,15 @@ code {
 }
 
 .analize {
-    width: 30%;
+    width: 90vw;
     font-size: small;
+}
+
+@media (min-width: 400px) {
+    .analize {
+        width: 30vw;
+        font-size: small;
+    }
 }
 
 .list {
