@@ -45,3 +45,13 @@ code {
 .item {
     margin-bottom: 5px
 }
+
+.custom-arrow-color {
+    color: rgba(67, 160, 71, 0.8);
+}
+
+.settings {
+    display: flex;
+    align-self: end;
+    padding: 5px;
+}

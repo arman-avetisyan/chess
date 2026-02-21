@@ -19,6 +19,7 @@ const App = () => {
     const [toSquare, setToSquare] = useState(null);     // Holds the destination square of the last move
     // State to hold the best move's starting and ending squares for the arrow
     const [bestMoveArrow, setBestMoveArrow] = useState([]);
+    const [boardOrientation, setBorderOrientation] = useState("white");
 
     // useEffect to set up Stockfish as a Web Worker when the component first loads (mounts)
     useEffect(() => {
@@ -160,7 +161,12 @@ const App = () => {
                     customSquareStyles={getSquareStyles()} // Apply last move highlight styles
                     customArrows={bestMoveArrow} // Pass the best move arrow to render on the board
                     customArrowColor={"rgba(67, 160, 71, 0.8)"} // Set the custom arrow color
+                    arePremovesAllowed={false}
+                    boardOrientation={boardOrientation}
                 />
+                <div className='settings'>
+                    <button onClick={() => setBorderOrientation(boardOrientation === "white" ? "black" : "white")}>Flip</button>
+                </div>
             </div>
             <div className='analize'>
                 <ul className='list'>
