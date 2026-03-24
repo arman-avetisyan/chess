@@ -1,70 +1,34 @@
-# Getting Started with Create React App
+# Chess
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+TypeScript React chess app with **React**, **react-chessboard**, **Material UI**, **chess.js**, and **Stockfish.js**. Uses Lichess **cardinal** piece set.
 
-## Available Scripts
+## Setup
 
-In the project directory, you can run:
+```bash
+npm install
+npm run dev
+```
 
-### `npm start`
+Stockfish worker files are copied from `node_modules/stockfish/bin` to `public/` on `npm run dev` and `npm run build`. If the engine fails to load, ensure `public/stockfish-18-lite-single.js` and `public/stockfish-18-lite-single.wasm` exist (run `npm run copy-stockfish`).
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Structure
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- **Game**
+  - **Game with friend** – two players, no engine. When the game is over, an **Analyze** button appears and opens Tools → Analyze game with the final position.
+  - **Game with Stockfish** – same as friend (engine off during play). **Analyze** after game over.
+- **Tools**
+  - **Analyze game** – play through a game with an optional engine toggle. Engine shows top lines and best-move arrow.
+  - **Set position** – set a FEN position (e.g. for puzzles) with optional engine toggle.
 
-### `npm test`
+## Layout
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- Board width: **350px**, centered with annotations/engine lines.
+- **Web (md+):** annotations and engine lines to the **right** of the board.
+- **Mobile:** annotations and engine lines **below** the board.
 
-### `npm run build`
+## Scripts
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- `npm run dev` – start dev server (copies Stockfish, then Vite).
+- `npm run build` – copy Stockfish, type-check, and build for production.
+- `npm run preview` – serve production build.
+- `npm run copy-stockfish` – copy Stockfish worker files to `public/`.

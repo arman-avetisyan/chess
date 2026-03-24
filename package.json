@@ -1,43 +1,30 @@
 {
-    "homepage": "https://arman-avetisyan.github.io/chess",
-    "name": "chess",
-    "version": "0.1.0",
-    "private": true,
-    "dependencies": {
-        "chess.js": "^1.0.0-beta.8",
-        "cra-template": "1.2.0",
-        "react": "^19.0.0",
-        "react-chessboard": "^4.7.2",
-        "react-dom": "^19.0.0",
-        "react-scripts": "^5.0.1"
-    },
-    "scripts": {
-        "start": "react-scripts start",
-        "build": "react-scripts build",
-        "test": "react-scripts test",
-        "eject": "react-scripts eject",
-        "deploy": "gh-pages -d build"
-    },
-    "eslintConfig": {
-        "extends": [
-            "react-app",
-            "react-app/jest"
-        ]
-    },
-    "browserslist": {
-        "production": [
-            ">0.2%",
-            "not dead",
-            "not op_mini all"
-        ],
-        "development": [
-            "last 1 chrome version",
-            "last 1 firefox version",
-            "last 1 safari version"
-        ]
-    },
-    "devDependencies": {
-        "gh-pages": "^6.2.0",
-        "web-vitals": "^4.2.4"
-    }
+  "name": "chess-v2",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "npm run copy-stockfish && vite",
+    "build": "npm run copy-stockfish && tsc && vite build",
+    "preview": "vite preview",
+    "copy-stockfish": "node scripts/copy-stockfish.cjs"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/icons-material": "^6.3.0",
+    "@mui/material": "^6.3.0",
+    "chess.js": "^1.4.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-chessboard": "^5.10.0",
+    "stockfish": "^18.0.5"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.1"
+  }
 }
