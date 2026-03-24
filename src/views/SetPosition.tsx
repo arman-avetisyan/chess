@@ -27,13 +27,16 @@ export function SetPosition() {
   }
 
   useEffect(() => {
-    if (engineEnabled && ready) {
-      getAnalysis(position).catch(() => {})
-    } else {
+    if (!engineEnabled || !ready) {
       setLines([])
       setBestMoveArrow([])
+      return
     }
-  }, [position, engineEnabled, ready])
+    const t = window.setTimeout(() => {
+      getAnalysis(position).catch(() => {})
+    }, 120)
+    return () => window.clearTimeout(t)
+  }, [position, engineEnabled, ready, getAnalysis])
 
   const handleDrop = (source: string, target: string, piece: string) => {
     const gameCopy = new Chess(game.fen())
@@ -82,7 +85,12 @@ export function SetPosition() {
         }
         label="Chess engine"
       />
-      <EngineLines lines={lines} engineEnabled={engineEnabled} error={error} />
+      <EngineLines
+        lines={lines}
+        engineEnabled={engineEnabled}
+        error={error}
+        workerReady={ready}
+      />
       <Button
         size="small"
         onClick={() => setBoardOrientation((o) => (o === 'white' ? 'black' : 'white'))}

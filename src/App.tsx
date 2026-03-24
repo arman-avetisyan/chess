@@ -14,6 +14,7 @@ import { GameWithFriend } from './views/GameWithFriend'
 import { GameWithStockfish } from './views/GameWithStockfish'
 import { AnalyzeGame } from './views/AnalyzeGame'
 import { SetPosition } from './views/SetPosition'
+import type { AnalyzePayload } from './types/analyze'
 
 type TabPanelProps = {
   children: React.ReactNode
@@ -34,10 +35,12 @@ export default function App() {
   const [gameSubTab, setGameSubTab] = useState(0)
   const [toolsSubTab, setToolsSubTab] = useState(0)
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [analyzeFen, setAnalyzeFen] = useState<string | undefined>()
+  const [analyzePayload, setAnalyzePayload] = useState<AnalyzePayload | null>(null)
+  const [analyzeVersion, setAnalyzeVersion] = useState(0)
 
-  const handleAnalyze = (fen: string) => {
-    setAnalyzeFen(fen)
+  const handleAnalyze = (payload: AnalyzePayload) => {
+    setAnalyzePayload(payload)
+    setAnalyzeVersion((v) => v + 1)
     setTab(1)
     setToolsSubTab(0)
   }
@@ -69,7 +72,11 @@ export default function App() {
         {tab === 1 && (
           <>
             <TabPanel value={toolsSubTab} index={0}>
-              <AnalyzeGame key={analyzeFen} initialFen={analyzeFen} />
+              <AnalyzeGame
+                key={analyzeVersion}
+                initialFen={analyzePayload?.fen}
+                initialMoves={analyzePayload?.moves}
+              />
             </TabPanel>
             <TabPanel value={toolsSubTab} index={1}>
               <SetPosition />
@@ -143,6 +150,8 @@ export default function App() {
               onClick={() => {
                 setTab(1)
                 setToolsSubTab(0)
+                setAnalyzePayload(null)
+                setAnalyzeVersion((v) => v + 1)
                 setDrawerOpen(false)
               }}
             >

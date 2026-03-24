@@ -1,8 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Chess } from 'chess.js'
 
 export type EngineLine = {
   eval: number | string
   moves: string[]
+}
+
+type QueuedAnalysis = {
+  fen: string
+  depth: number
+  multiPv: number
+  resolve: (lines: EngineLine[]) => void
 }
 
 export function useStockfish(workerUrl: string = '/stockfish-18-lite-single.js') {
@@ -11,9 +19,21 @@ export function useStockfish(workerUrl: string = '/stockfish-18-lite-single.js')
   const [bestMoveArrow, setBestMoveArrow] = useState<[string, string][]>([])
   const [error, setError] = useState<string | null>(null)
   const workerRef = useRef<Worker | null>(null)
+  /** Mirrors UCI readiness; state `ready` can lag one frame behind the worker — use this inside getAnalysis. */
+  const readyRef = useRef(false)
   const pendingRef = useRef<{ resolve: (lines: EngineLine[]) => void } | null>(null)
   const linesRef = useRef<EngineLine[]>([])
   const bestMoveRef = useRef<string | null>(null)
+  /** True while a `go` is in progress until we receive `bestmove`. */
+  const searchingRef = useRef(false)
+  /** Next search to run after `bestmove` (latest request wins while overlapping). */
+  const queuedRef = useRef<QueuedAnalysis | null>(null)
+  /** Runs a new search; must only be called when engine is idle or right after `bestmove`. */
+  const beginSearchRef = useRef<(q: QueuedAnalysis) => void>(() => {})
+  /** FEN for the search currently running (for eval POV). */
+  const currentAnalysisFenRef = useRef<string>('')
+  /** First `info` after a new search replaces lines instead of merging with stale UI. */
+  const replaceLinesOnNextInfoRef = useRef(false)
 
   useEffect(() => {
     let worker: Worker
@@ -21,10 +41,40 @@ export function useStockfish(workerUrl: string = '/stockfish-18-lite-single.js')
       worker = new Worker(workerUrl)
       workerRef.current = worker
 
-      worker.onmessage = (event: MessageEvent<string>) => {
-        const message = event.data
+      const beginSearch = (q: QueuedAnalysis) => {
+        const w = workerRef.current
+        if (!w || !readyRef.current) {
+          q.resolve([])
+          searchingRef.current = false
+          return
+        }
+        let fen = q.fen
+        try {
+          fen = new Chess(fen).fen()
+        } catch {
+          q.resolve([])
+          searchingRef.current = false
+          return
+        }
+        searchingRef.current = true
+        currentAnalysisFenRef.current = fen
+        replaceLinesOnNextInfoRef.current = true
+        linesRef.current = []
+        // Don't clear React state here — avoids layout twitch on history navigation; first `info` replaces.
+        setBestMoveArrow([])
+        pendingRef.current = { resolve: q.resolve }
+        w.postMessage(`setoption name MultiPV value ${q.multiPv}`)
+        w.postMessage(`position fen ${fen}`)
+        w.postMessage(`go depth ${q.depth}`)
+      }
+      beginSearchRef.current = beginSearch
+
+      const processLine = (raw: string) => {
+        const message = raw.trim()
+        if (!message) return
 
         if (message === 'uciok') {
+          readyRef.current = true
           setReady(true)
           setError(null)
           return
@@ -38,36 +88,89 @@ export function useStockfish(workerUrl: string = '/stockfish-18-lite-single.js')
             const from = bestMove.slice(0, 2)
             const to = bestMove.slice(2, 4)
             setBestMoveArrow([[from, to]])
+          } else {
+            bestMoveRef.current = null
+            setBestMoveArrow([])
+            if (linesRef.current.length === 0) {
+              const fallback: EngineLine[] = [{ eval: 'Game over (no legal moves)', moves: [] }]
+              linesRef.current = fallback
+              setLines(fallback)
+            }
           }
+          searchingRef.current = false
           if (pendingRef.current) {
             pendingRef.current.resolve([...linesRef.current])
             pendingRef.current = null
           }
+          const next = queuedRef.current
+          queuedRef.current = null
+          if (next) {
+            beginSearch(next)
+          }
           return
         }
 
-        if (message.startsWith('info') && message.includes('score') && message.includes(' pv ')) {
+        if (message.startsWith('info') && message.includes('score')) {
           const scoreMatch = message.match(/score (cp|mate) (-?\d+)/)
-          const pvMatch = message.match(/ pv ([^\n]+)/)
-          const moves = pvMatch ? pvMatch[1].trim().split(/\s+/) : []
-          const isMate = scoreMatch?.[1] === 'mate'
-          const value = scoreMatch ? parseInt(scoreMatch[2], 10) : 0
-          const evalStr = isMate ? `Mate in ${Math.abs(value)}` : value / 100
+          if (!scoreMatch) return
+          const hasPv = /\bpv\b/.test(message)
+          const pvMatch = hasPv ? message.match(/\bpv\s+(.+)$/) : null
+          const moves = pvMatch ? pvMatch[1].trim().split(/\s+/).filter(Boolean) : []
+          const isMate = scoreMatch[1] === 'mate'
+          const raw = parseInt(scoreMatch[2], 10)
+          // Stockfish reports cp from the side-to-move's perspective; convert to White POV (+ = White better).
+          let fenForPov = currentAnalysisFenRef.current
+          try {
+            fenForPov = new Chess(fenForPov).fen()
+          } catch {
+            fenForPov = currentAnalysisFenRef.current
+          }
+          const turn = new Chess(fenForPov).turn()
+          // Internal eval is from the side to move; UCI cp follows that — convert to White POV (+ = White better).
+          let evalStr: number | string
+          if (isMate) {
+            evalStr = `Mate in ${Math.abs(raw)}`
+          } else {
+            const whiteCp = turn === 'w' ? raw : -raw
+            evalStr = whiteCp / 100
+          }
           const line: EngineLine = { eval: evalStr, moves }
-          const multiPvMatch = message.match(/ multipv (\d+)/)
+          const multiPvMatch = message.match(/\bmultipv\s+(\d+)/)
           const idx = multiPvMatch ? parseInt(multiPvMatch[1], 10) - 1 : 0
+
+          const resetBatch = replaceLinesOnNextInfoRef.current
+          if (resetBatch) {
+            replaceLinesOnNextInfoRef.current = false
+            linesRef.current = []
+          }
           linesRef.current[idx] = line
           setLines((prev) => {
-            const next = [...prev]
+            const base = resetBatch ? [] : [...prev]
+            const next = [...base]
             next[idx] = line
             return next.filter(Boolean)
           })
         }
       }
 
+      worker.onmessage = (event: MessageEvent<unknown>) => {
+        const data = event.data
+        const text = typeof data === 'string' ? data : String(data ?? '')
+        for (const line of text.split(/\r?\n/)) {
+          processLine(line)
+        }
+      }
+
       worker.onerror = () => {
+        searchingRef.current = false
+        queuedRef.current = null
+        if (pendingRef.current) {
+          pendingRef.current.resolve([])
+          pendingRef.current = null
+        }
         setError('Failed to load Stockfish worker. Copy stockfish-18-lite-single.js and .wasm to public/.')
         setReady(false)
+        readyRef.current = false
       }
 
       worker.postMessage('uci')
@@ -77,6 +180,14 @@ export function useStockfish(workerUrl: string = '/stockfish-18-lite-single.js')
     }
 
     return () => {
+      readyRef.current = false
+      searchingRef.current = false
+      queuedRef.current = null
+      if (pendingRef.current) {
+        pendingRef.current.resolve([])
+        pendingRef.current = null
+      }
+      setReady(false)
       worker?.terminate()
       workerRef.current = null
     }
@@ -84,19 +195,31 @@ export function useStockfish(workerUrl: string = '/stockfish-18-lite-single.js')
 
   const getAnalysis = useCallback((fen: string, depth: number = 15, multiPv: number = 3) => {
     return new Promise<EngineLine[]>((resolve) => {
-      if (!workerRef.current || !ready) {
+      if (!workerRef.current || !readyRef.current) {
         resolve([])
         return
       }
-      linesRef.current = []
-      setLines([])
-      setBestMoveArrow([])
-      pendingRef.current = { resolve }
-      workerRef.current.postMessage(`setoption name MultiPV value ${multiPv}`)
-      workerRef.current.postMessage(`position fen ${fen}`)
-      workerRef.current.postMessage(`go depth ${depth}`)
+
+      const entry: QueuedAnalysis = { fen, depth, multiPv, resolve }
+
+      if (searchingRef.current) {
+        // Replace any already-queued request; only send `stop` once until `bestmove` (extra stops can crash WASM)
+        if (queuedRef.current) {
+          queuedRef.current.resolve([])
+        } else {
+          if (pendingRef.current) {
+            pendingRef.current.resolve([...linesRef.current])
+            pendingRef.current = null
+          }
+          workerRef.current.postMessage('stop')
+        }
+        queuedRef.current = entry
+        return
+      }
+
+      beginSearchRef.current(entry)
     })
-  }, [ready])
+  }, [])
 
   const stopAnalysis = useCallback(() => {
     if (workerRef.current) workerRef.current.postMessage('stop')

@@ -5,9 +5,10 @@ import { BoardLayout } from '../components/BoardLayout'
 import { ChessBoard } from '../components/ChessBoard'
 import { useStockfish } from '../hooks/useStockfish'
 import { MoveHistory } from '../components/MoveHistory'
+import type { AnalyzePayload } from '../types/analyze'
 
 type GameWithStockfishProps = {
-  onAnalyze?: (fen: string) => void
+  onAnalyze?: (payload: AnalyzePayload) => void
 }
 
 export function GameWithStockfish({ onAnalyze }: GameWithStockfishProps) {
@@ -168,7 +169,11 @@ export function GameWithStockfish({ onAnalyze }: GameWithStockfishProps) {
             <MoveHistory moves={moves} currentPly={currentPly} onSelectPly={setBoardAtPly} />
           </Box>
           {gameOver && (
-            <Button variant="contained" onClick={() => onAnalyze?.(game.fen())} sx={{ mt: 1 }}>
+            <Button
+              variant="contained"
+              onClick={() => onAnalyze?.({ fen: game.fen(), moves })}
+              sx={{ mt: 1 }}
+            >
               Analyze
             </Button>
           )}

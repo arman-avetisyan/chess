@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useLayoutEffect } from 'react'
 import { Chess } from 'chess.js'
 import { Box, Button, FormControlLabel, Switch } from '@mui/material'
 import { BoardLayout } from '../components/BoardLayout'
@@ -6,23 +6,51 @@ import { ChessBoard } from '../components/ChessBoard'
 import { EngineLines } from '../components/EngineLines'
 import { useStockfish } from '../hooks/useStockfish'
 import { MoveHistory } from '../components/MoveHistory'
+import type { AnalyzeMove } from '../types/analyze'
 
 type AnalyzeGameProps = {
   initialFen?: string
+  /** When sent from a finished game, replay list so move history is populated */
+  initialMoves?: AnalyzeMove[]
 }
 
-export function AnalyzeGame({ initialFen }: AnalyzeGameProps) {
-  const [game] = useState(() => new Chess(initialFen ?? undefined))
-  const [startFen] = useState(game.fen())
-  const [moves, setMoves] = useState<
-    Array<{ san: string; from: string; to: string; promotion?: 'q' | 'r' | 'b' | 'n' }>
-  >([])
+export function AnalyzeGame({ initialFen, initialMoves }: AnalyzeGameProps) {
+  const [game] = useState(() => {
+    if (initialMoves?.length) {
+      const g = new Chess()
+      for (const m of initialMoves) {
+        const ok = g.move({
+          from: m.from,
+          to: m.to,
+          promotion: m.promotion,
+        })
+        if (!ok) break
+      }
+      return g
+    }
+    return new Chess(initialFen ?? undefined)
+  })
+  const [startFen] = useState(() =>
+    initialMoves?.length ? new Chess().fen() : new Chess(initialFen ?? undefined).fen(),
+  )
+  const [moves, setMoves] = useState<AnalyzeMove[]>(() => initialMoves ?? [])
   const [currentPly, setCurrentPly] = useState(0)
   const [position, setPosition] = useState(game.fen())
   const [lastMove, setLastMove] = useState<{ from: string; to: string } | null>(null)
   const [boardOrientation, setBoardOrientation] = useState<'white' | 'black'>('white')
-  const [engineEnabled, setEngineEnabled] = useState(false)
+  /** On by default so opening Analyze shows lines and best-move arrow without an extra click. */
+  const [engineEnabled, setEngineEnabled] = useState(true)
+  /** Sync board to start of line (ply 0) before running Stockfish — avoids racing the worker before FEN is stable. */
+  const [boardPrimed, setBoardPrimed] = useState(false)
   const { ready, lines, bestMoveArrow, getAnalysis, setLines, setBestMoveArrow, error } = useStockfish()
+
+  useLayoutEffect(() => {
+    const navGame = new Chess(startFen)
+    setPosition(navGame.fen())
+    setLastMove(null)
+    setCurrentPly(0)
+    setBoardPrimed(true)
+  }, [startFen])
 
   const setBoardAtPly = (
     ply: number,
@@ -59,13 +87,17 @@ export function AnalyzeGame({ initialFen }: AnalyzeGameProps) {
   }, [currentPly, moves.length])
 
   useEffect(() => {
-    if (engineEnabled && ready) {
-      getAnalysis(position).catch(() => {})
-    } else {
+    if (!engineEnabled || !ready || !boardPrimed) {
       setLines([])
       setBestMoveArrow([])
+      return
     }
-  }, [position, engineEnabled, ready])
+    // Debounce: rapid arrow-key navigation was overlapping `go` and could crash Stockfish WASM
+    const t = window.setTimeout(() => {
+      getAnalysis(position).catch(() => {})
+    }, 120)
+    return () => window.clearTimeout(t)
+  }, [position, engineEnabled, ready, boardPrimed, getAnalysis])
 
   const handleDrop = (source: string, target: string, piece: string) => {
     if (currentPly !== moves.length) return false
@@ -110,7 +142,14 @@ export function AnalyzeGame({ initialFen }: AnalyzeGameProps) {
         }
         label="Chess engine"
       />
-      <EngineLines lines={lines} engineEnabled={engineEnabled} error={error} maxHeight="40%" />
+      <EngineLines
+        lines={lines}
+        engineEnabled={engineEnabled}
+        error={error}
+        maxHeight="40%"
+        workerReady={ready}
+        boardReady={boardPrimed}
+      />
       <Box sx={{ flex: 1, minHeight: 0 }}>
         <MoveHistory moves={moves} currentPly={currentPly} onSelectPly={setBoardAtPly} />
       </Box>

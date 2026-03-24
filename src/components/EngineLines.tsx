@@ -6,9 +6,20 @@ type EngineLinesProps = {
   engineEnabled: boolean
   error?: string | null
   maxHeight?: number | string
+  /** UCI worker finished handshake (uciok). Defaults to true for screens that don't need it. */
+  workerReady?: boolean
+  /** Board / replay state is synced before starting analysis. Defaults to true. */
+  boardReady?: boolean
 }
 
-export function EngineLines({ lines, engineEnabled, error, maxHeight }: EngineLinesProps) {
+export function EngineLines({
+  lines,
+  engineEnabled,
+  error,
+  maxHeight,
+  workerReady = true,
+  boardReady = true,
+}: EngineLinesProps) {
   const containerSx = maxHeight
     ? { p: 1, maxHeight, overflowY: 'auto' as const }
     : { p: 1 }
@@ -23,10 +34,16 @@ export function EngineLines({ lines, engineEnabled, error, maxHeight }: EngineLi
     )
   }
   if (!engineEnabled || lines.length === 0) {
+    let status = 'Engine off'
+    if (engineEnabled) {
+      if (!workerReady) status = 'Starting engine…'
+      else if (!boardReady) status = 'Preparing board…'
+      else status = 'Analyzing…'
+    }
     return (
       <Box sx={containerSx}>
         <Typography variant="body2" color="text.secondary">
-          {engineEnabled ? 'Analyzing…' : 'Engine off'}
+          {status}
         </Typography>
       </Box>
     )
