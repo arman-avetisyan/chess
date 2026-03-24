@@ -1,4 +1,4 @@
-# Chess v2
+# Chess
 
 TypeScript React chess app with **React**, **react-chessboard**, **Material UI**, **chess.js**, and **Stockfish.js**. Uses Lichess **cardinal** piece set.
 
