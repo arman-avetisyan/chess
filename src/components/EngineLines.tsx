@@ -15,6 +15,7 @@ type EngineLinesProps = {
   workerReady?: boolean
   /** Board / replay state is synced before starting analysis. Defaults to true. */
   boardReady?: boolean
+  width?: string
 }
 
 function formatPvMoves(
@@ -34,6 +35,7 @@ export function EngineLines({
   lines,
   engineEnabled,
   error,
+  width,
   maxHeight,
   positionFen,
   linesFen,
@@ -41,8 +43,8 @@ export function EngineLines({
   boardReady = true,
 }: EngineLinesProps) {
   const containerSx = maxHeight
-    ? { p: 0.5, maxHeight, overflowY: 'auto' as const }
-    : { p: 0.5 }
+    ? { p: 0.5, width, maxHeight, overflowY: 'auto' as const }
+    : { p: 0.5, width }
 
   if (error) {
     return (

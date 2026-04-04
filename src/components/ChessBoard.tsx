@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { Chessboard } from 'react-chessboard'
 import { BOARD_WIDTH } from './BoardLayout'
 import { getCustomPieces } from '../pieces'
@@ -19,7 +19,7 @@ type ChessBoardProps = {
   arePiecesDraggable?: boolean
 }
 
-export function ChessBoard({
+function ChessBoardInner({
   position,
   onDrop,
   boardOrientation = 'white',
@@ -106,3 +106,5 @@ export function ChessBoard({
     </div>
   )
 }
+
+export const ChessBoard = memo(ChessBoardInner)

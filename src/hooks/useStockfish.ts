@@ -63,8 +63,7 @@ export function useStockfish(workerUrl: string = `${import.meta.env.BASE_URL}sto
         replaceLinesOnNextInfoRef.current = true
         linesRef.current = []
         setLinesFen(null)
-        // Don't clear React `lines` here — avoids layout twitch on history navigation; first `info` replaces.
-        setBestMoveArrow([])
+        // Don't clear React `lines` or `bestMoveArrow` here — avoids board twitch on navigation; `bestmove` / `info` updates replace.
         pendingRef.current = { resolve: q.resolve }
         w.postMessage(`setoption name MultiPV value ${q.multiPv}`)
         w.postMessage(`position fen ${fen}`)
