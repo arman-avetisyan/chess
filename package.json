@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "npm run copy-stockfish && vite",
     "build": "npm run copy-stockfish && tsc && vite build",
-    "deploy": "gh-pages -d dist",
+    "deploy": "npx gh-pages -d dist",
     "preview": "vite preview",
     "copy-stockfish": "node scripts/copy-stockfish.cjs"
   },
