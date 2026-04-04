@@ -13,7 +13,8 @@ export function SetPosition() {
   const [lastMove, setLastMove] = useState<{ from: string; to: string } | null>(null)
   const [boardOrientation, setBoardOrientation] = useState<'white' | 'black'>('white')
   const [engineEnabled, setEngineEnabled] = useState(false)
-  const { ready, lines, bestMoveArrow, getAnalysis, setLines, setBestMoveArrow, error } = useStockfish()
+  const { ready, lines, linesFen, bestMoveArrow, getAnalysis, setLines, setBestMoveArrow, error } =
+    useStockfish()
 
   const applyFen = () => {
     try {
@@ -89,6 +90,8 @@ export function SetPosition() {
         lines={lines}
         engineEnabled={engineEnabled}
         error={error}
+        positionFen={position}
+        linesFen={linesFen}
         workerReady={ready}
       />
       <Button

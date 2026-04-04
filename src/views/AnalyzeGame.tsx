@@ -42,7 +42,8 @@ export function AnalyzeGame({ initialFen, initialMoves }: AnalyzeGameProps) {
   const [engineEnabled, setEngineEnabled] = useState(true)
   /** Sync board to start of line (ply 0) before running Stockfish — avoids racing the worker before FEN is stable. */
   const [boardPrimed, setBoardPrimed] = useState(false)
-  const { ready, lines, bestMoveArrow, getAnalysis, setLines, setBestMoveArrow, error } = useStockfish()
+  const { ready, lines, linesFen, bestMoveArrow, getAnalysis, setLines, setBestMoveArrow, error } =
+    useStockfish()
 
   useLayoutEffect(() => {
     const navGame = new Chess(startFen)
@@ -146,7 +147,9 @@ export function AnalyzeGame({ initialFen, initialMoves }: AnalyzeGameProps) {
         lines={lines}
         engineEnabled={engineEnabled}
         error={error}
-        maxHeight="40%"
+        maxHeight="25%"
+        positionFen={position}
+        linesFen={linesFen}
         workerReady={ready}
         boardReady={boardPrimed}
       />

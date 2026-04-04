@@ -16,6 +16,8 @@ type QueuedAnalysis = {
 export function useStockfish(workerUrl: string = `${import.meta.env.BASE_URL}stockfish-18-lite-single.js`) {
   const [ready, setReady] = useState(false)
   const [lines, setLines] = useState<EngineLine[]>([])
+  /** FEN the current `lines` were computed for; `null` while a new search is pending (stale UI). */
+  const [linesFen, setLinesFen] = useState<string | null>(null)
   const [bestMoveArrow, setBestMoveArrow] = useState<[string, string][]>([])
   const [error, setError] = useState<string | null>(null)
   const workerRef = useRef<Worker | null>(null)
@@ -60,7 +62,8 @@ export function useStockfish(workerUrl: string = `${import.meta.env.BASE_URL}sto
         currentAnalysisFenRef.current = fen
         replaceLinesOnNextInfoRef.current = true
         linesRef.current = []
-        // Don't clear React state here — avoids layout twitch on history navigation; first `info` replaces.
+        setLinesFen(null)
+        // Don't clear React `lines` here — avoids layout twitch on history navigation; first `info` replaces.
         setBestMoveArrow([])
         pendingRef.current = { resolve: q.resolve }
         w.postMessage(`setoption name MultiPV value ${q.multiPv}`)
@@ -95,6 +98,11 @@ export function useStockfish(workerUrl: string = `${import.meta.env.BASE_URL}sto
               const fallback: EngineLine[] = [{ eval: 'Game over (no legal moves)', moves: [] }]
               linesRef.current = fallback
               setLines(fallback)
+              try {
+                setLinesFen(new Chess(currentAnalysisFenRef.current).fen())
+              } catch {
+                setLinesFen(currentAnalysisFenRef.current)
+              }
             }
           }
           searchingRef.current = false
@@ -150,6 +158,11 @@ export function useStockfish(workerUrl: string = `${import.meta.env.BASE_URL}sto
             next[idx] = line
             return next.filter(Boolean)
           })
+          try {
+            setLinesFen(new Chess(currentAnalysisFenRef.current).fen())
+          } catch {
+            setLinesFen(currentAnalysisFenRef.current)
+          }
         }
       }
 
@@ -238,6 +251,7 @@ export function useStockfish(workerUrl: string = `${import.meta.env.BASE_URL}sto
     ready,
     error,
     lines,
+    linesFen,
     bestMoveArrow,
     setLines,
     setBestMoveArrow,
