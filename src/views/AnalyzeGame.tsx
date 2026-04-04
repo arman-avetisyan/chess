@@ -1,12 +1,13 @@
 import { useState, useEffect, useLayoutEffect } from 'react'
 import { Chess } from 'chess.js'
-import { Box, Button, FormControlLabel, Switch } from '@mui/material'
+import { Box, FormControlLabel, Switch } from '@mui/material'
 import { BoardLayout } from '../components/BoardLayout'
 import { ChessBoard } from '../components/ChessBoard'
 import { EngineLines } from '../components/EngineLines'
 import { useStockfish } from '../hooks/useStockfish'
 import { MoveHistory } from '../components/MoveHistory'
 import type { AnalyzeMove } from '../types/analyze'
+import ScreenRotationAltIcon from '@mui/icons-material/ScreenRotationAlt';
 
 type AnalyzeGameProps = {
   initialFen?: string
@@ -133,16 +134,17 @@ export function AnalyzeGame({ initialFen, initialMoves }: AnalyzeGameProps) {
 
   const annotations = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <FormControlLabel
-        control={
-          <Switch
-            checked={engineEnabled}
-            onChange={(_, v) => setEngineEnabled(v)}
-            disabled={!ready}
-          />
-        }
-        label="Chess engine"
-      />
+        <FormControlLabel
+            control={
+            <Switch
+                checked={engineEnabled}
+                onChange={(_, v) => setEngineEnabled(v)}
+                disabled={!ready}
+                size="small"
+            />
+            }
+            label="Chess engine"
+        />
       <EngineLines
         lines={lines}
         engineEnabled={engineEnabled}
@@ -156,27 +158,27 @@ export function AnalyzeGame({ initialFen, initialMoves }: AnalyzeGameProps) {
       <Box sx={{ flex: 1, minHeight: 0 }}>
         <MoveHistory moves={moves} currentPly={currentPly} onSelectPly={setBoardAtPly} />
       </Box>
-      <Button
-        size="small"
-        onClick={() => setBoardOrientation((o) => (o === 'white' ? 'black' : 'white'))}
-        sx={{ mt: 1 }}
-      >
-        Flip board
-      </Button>
     </Box>
   )
 
   return (
     <BoardLayout
       board={
-        <ChessBoard
-          position={position}
-          onDrop={handleDrop}
-          boardOrientation={boardOrientation}
-          customSquareStyles={squareStyles}
-          customArrows={engineEnabled ? bestMoveArrow : []}
-          arePiecesDraggable={currentPly === moves.length}
-        />
+        <>
+            <ChessBoard
+            position={position}
+            onDrop={handleDrop}
+            boardOrientation={boardOrientation}
+            customSquareStyles={squareStyles}
+            customArrows={engineEnabled ? bestMoveArrow : []}
+            arePiecesDraggable={currentPly === moves.length}
+            />
+            <ScreenRotationAltIcon
+                fontSize="small"
+                onClick={() => setBoardOrientation((o) => (o === 'white' ? 'black' : 'white'))}
+                sx={{ mt: 1 }}
+            />
+        </>
       }
       annotations={annotations}
     />

@@ -6,6 +6,7 @@ import { ChessBoard } from '../components/ChessBoard'
 import { EngineLines } from '../components/EngineLines'
 import { MoveHistory } from '../components/MoveHistory'
 import type { AnalyzePayload } from '../types/analyze'
+import ScreenRotationAltIcon from '@mui/icons-material/ScreenRotationAlt';
 
 type GameWithFriendProps = {
   onAnalyze?: (payload: AnalyzePayload) => void
@@ -114,13 +115,11 @@ export function GameWithFriend({ onAnalyze }: GameWithFriendProps) {
             customSquareStyles={squareStyles}
             arePiecesDraggable={currentPly === moves.length}
           />
-          <Button
-            size="small"
+          <ScreenRotationAltIcon
+            fontSize="small"
             onClick={() => setBoardOrientation((o) => (o === 'white' ? 'black' : 'white'))}
             sx={{ mt: 1 }}
-          >
-            Flip board
-          </Button>
+          />
         </>
       }
       annotations={annotations}

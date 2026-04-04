@@ -5,6 +5,7 @@ import { BoardLayout } from '../components/BoardLayout'
 import { ChessBoard } from '../components/ChessBoard'
 import { EngineLines } from '../components/EngineLines'
 import { useStockfish } from '../hooks/useStockfish'
+import ScreenRotationAltIcon from '@mui/icons-material/ScreenRotationAlt';
 
 export function SetPosition() {
   const [fen, setFen] = useState('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
@@ -82,6 +83,7 @@ export function SetPosition() {
             checked={engineEnabled}
             onChange={(_, v) => setEngineEnabled(v)}
             disabled={!ready}
+            size="small"
           />
         }
         label="Chess engine"
@@ -94,26 +96,26 @@ export function SetPosition() {
         linesFen={linesFen}
         workerReady={ready}
       />
-      <Button
-        size="small"
-        onClick={() => setBoardOrientation((o) => (o === 'white' ? 'black' : 'white'))}
-        sx={{ mt: 1 }}
-      >
-        Flip board
-      </Button>
     </>
   )
 
   return (
     <BoardLayout
       board={
-        <ChessBoard
-          position={position}
-          onDrop={handleDrop}
-          boardOrientation={boardOrientation}
-          customSquareStyles={squareStyles}
-          customArrows={engineEnabled ? bestMoveArrow : []}
-        />
+        <>
+            <ChessBoard
+                position={position}
+                onDrop={handleDrop}
+                boardOrientation={boardOrientation}
+                customSquareStyles={squareStyles}
+                customArrows={engineEnabled ? bestMoveArrow : []}
+            />
+            <ScreenRotationAltIcon
+                fontSize="small"
+                onClick={() => setBoardOrientation((o) => (o === 'white' ? 'black' : 'white'))}
+                sx={{ mt: 1 }}
+            />
+        </>
       }
       annotations={annotations}
     />

@@ -6,6 +6,7 @@ import { ChessBoard } from '../components/ChessBoard'
 import { useStockfish } from '../hooks/useStockfish'
 import { MoveHistory } from '../components/MoveHistory'
 import type { AnalyzePayload } from '../types/analyze'
+import ScreenRotationAltIcon from '@mui/icons-material/ScreenRotationAlt';
 
 type GameWithStockfishProps = {
   onAnalyze?: (payload: AnalyzePayload) => void
@@ -154,13 +155,10 @@ export function GameWithStockfish({ onAnalyze }: GameWithStockfishProps) {
             customSquareStyles={squareStyles}
             customArrows={[]}
           />
-          <Button
-            size="small"
+          <ScreenRotationAltIcon
+            fontSize="small"
             onClick={() => setBoardOrientation((o) => (o === 'white' ? 'black' : 'white'))}
-            sx={{ mt: 1 }}
-          >
-            Flip board
-          </Button>
+            sx={{ mt: 1 }}/>
         </>
       }
       annotations={
