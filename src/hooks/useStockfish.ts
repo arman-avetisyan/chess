@@ -13,7 +13,7 @@ type QueuedAnalysis = {
   resolve: (lines: EngineLine[]) => void
 }
 
-export function useStockfish(workerUrl: string = '/stockfish-18-lite-single.js') {
+export function useStockfish(workerUrl: string = `${import.meta.env.BASE_URL}stockfish-18-lite-single.js`) {
   const [ready, setReady] = useState(false)
   const [lines, setLines] = useState<EngineLine[]>([])
   const [bestMoveArrow, setBestMoveArrow] = useState<[string, string][]>([])
