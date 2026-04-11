@@ -1,11 +1,11 @@
 export type AnalyzeMove = {
-  san: string
-  from: string
-  to: string
-  promotion?: 'q' | 'r' | 'b' | 'n'
-}
+  san: string;
+  from: string;
+  to: string;
+  promotion?: "q" | "r" | "b" | "n";
+};
 
 export type AnalyzePayload = {
-  fen: string
-  moves?: AnalyzeMove[]
-}
+  fen: string;
+  moves?: AnalyzeMove[];
+};

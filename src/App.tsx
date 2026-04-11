@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState } from "react";
 import {
   Box,
   Drawer,
@@ -9,46 +9,55 @@ import {
   ListSubheader,
   Divider,
   Typography,
-} from '@mui/material'
-import { GameWithFriend } from './views/GameWithFriend'
-import { GameWithStockfish } from './views/GameWithStockfish'
-import { AnalyzeGame } from './views/AnalyzeGame'
-import { SetPosition } from './views/SetPosition'
-import type { AnalyzePayload } from './types/analyze'
+} from "@mui/material";
+import { GameWithFriend } from "./views/GameWithFriend";
+import { GameWithStockfish } from "./views/GameWithStockfish";
+import { AnalyzeGame } from "./views/AnalyzeGame";
+import { SetPosition } from "./views/SetPosition";
+import type { AnalyzePayload } from "./types/analyze";
 
 type TabPanelProps = {
-  children: React.ReactNode
-  value: number
-  index: number
-}
+  children: React.ReactNode;
+  value: number;
+  index: number;
+};
 
 function TabPanel({ children, value, index }: TabPanelProps) {
   return (
     <div role="tabpanel" hidden={value !== index}>
       {value === index && <Box sx={{ py: 2 }}>{children}</Box>}
     </div>
-  )
+  );
 }
 
 export default function App() {
-  const [tab, setTab] = useState(0)
-  const [gameSubTab, setGameSubTab] = useState(0)
-  const [toolsSubTab, setToolsSubTab] = useState(0)
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  const [analyzePayload, setAnalyzePayload] = useState<AnalyzePayload | null>(null)
-  const [analyzeVersion, setAnalyzeVersion] = useState(0)
+  const [tab, setTab] = useState(0);
+  const [gameSubTab, setGameSubTab] = useState(0);
+  const [toolsSubTab, setToolsSubTab] = useState(0);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [analyzePayload, setAnalyzePayload] = useState<AnalyzePayload | null>(
+    null,
+  );
+  const [analyzeVersion, setAnalyzeVersion] = useState(0);
 
   const handleAnalyze = (payload: AnalyzePayload) => {
-    setAnalyzePayload(payload)
-    setAnalyzeVersion((v) => v + 1)
-    setTab(1)
-    setToolsSubTab(0)
-  }
+    setAnalyzePayload(payload);
+    setAnalyzeVersion((v) => v + 1);
+    setTab(1);
+    setToolsSubTab(0);
+  };
 
   return (
-    <Box sx={{ display: 'flex', width: '100%', minHeight: '100vh', bgcolor: 'background.default' }}>
+    <Box
+      sx={{
+        display: "flex",
+        width: "100%",
+        minHeight: "100vh",
+        bgcolor: "background.default",
+      }}
+    >
       <Box sx={{ flexGrow: 1, p: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
           <IconButton
             aria-label="Open navigation drawer"
             onClick={() => setDrawerOpen(true)}
@@ -90,14 +99,21 @@ export default function App() {
         anchor="right"
         open={drawerOpen}
         sx={{
-          '& .MuiDrawer-paper': {
+          "& .MuiDrawer-paper": {
             width: 260,
-            boxSizing: 'border-box',
+            boxSizing: "border-box",
           },
         }}
       >
-        <Box sx={{ width: '100%', p: 2 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+        <Box sx={{ width: "100%", p: 2 }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 1,
+            }}
+          >
             <Typography variant="h6">Navigation</Typography>
             <IconButton
               aria-label="Close navigation drawer"
@@ -119,9 +135,9 @@ export default function App() {
             <ListItemButton
               selected={tab === 0 && gameSubTab === 0}
               onClick={() => {
-                setTab(0)
-                setGameSubTab(0)
-                setDrawerOpen(false)
+                setTab(0);
+                setGameSubTab(0);
+                setDrawerOpen(false);
               }}
             >
               <ListItemText primary="Game with friend" />
@@ -129,9 +145,9 @@ export default function App() {
             <ListItemButton
               selected={tab === 0 && gameSubTab === 1}
               onClick={() => {
-                setTab(0)
-                setGameSubTab(1)
-                setDrawerOpen(false)
+                setTab(0);
+                setGameSubTab(1);
+                setDrawerOpen(false);
               }}
             >
               <ListItemText primary="Game with Stockfish" />
@@ -148,11 +164,11 @@ export default function App() {
             <ListItemButton
               selected={tab === 1 && toolsSubTab === 0}
               onClick={() => {
-                setTab(1)
-                setToolsSubTab(0)
-                setAnalyzePayload(null)
-                setAnalyzeVersion((v) => v + 1)
-                setDrawerOpen(false)
+                setTab(1);
+                setToolsSubTab(0);
+                setAnalyzePayload(null);
+                setAnalyzeVersion((v) => v + 1);
+                setDrawerOpen(false);
               }}
             >
               <ListItemText primary="Analyze game" />
@@ -160,9 +176,9 @@ export default function App() {
             <ListItemButton
               selected={tab === 1 && toolsSubTab === 1}
               onClick={() => {
-                setTab(1)
-                setToolsSubTab(1)
-                setDrawerOpen(false)
+                setTab(1);
+                setToolsSubTab(1);
+                setDrawerOpen(false);
               }}
             >
               <ListItemText primary="Set position" />
@@ -171,5 +187,5 @@ export default function App() {
         </Box>
       </Drawer>
     </Box>
-  )
+  );
 }
