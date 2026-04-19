@@ -1,0 +1,10 @@
+# Ignore everything
+*
+
+# Do not ignore the src folder
+!src/**
+
+# Explicitly ignore the public folder and dependencies
+node_modules
+public/
+dist/

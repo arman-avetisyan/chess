@@ -1,0 +1,8 @@
+# Handle line endings automatically for text files
+* text=auto
+
+# Denote files that should always keep LF (common for JS libraries)
+*.js text eol=lf
+
+# Explicitly treat minified files as binary so they aren't touched
+public/*.js binary
