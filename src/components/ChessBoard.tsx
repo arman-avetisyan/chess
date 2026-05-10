@@ -18,6 +18,8 @@ type ChessBoardProps = {
   customSquareStyles?: Record<string, React.CSSProperties>;
   customArrows?: Array<[string, string]>;
   arePiecesDraggable?: boolean;
+  enableClickMove?: boolean;
+  onSquareClick?: (square: string, pieceType: string | null) => void;
 };
 
 function ChessBoardInner({
@@ -27,6 +29,8 @@ function ChessBoardInner({
   customSquareStyles = {},
   customArrows = [],
   arePiecesDraggable = true,
+  enableClickMove = true,
+  onSquareClick,
 }: ChessBoardProps) {
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
   const [selectedPieceType, setSelectedPieceType] = useState<string | null>(
@@ -97,6 +101,11 @@ function ChessBoardInner({
                 ? onDrop(sourceSquare, targetSquare, piece.pieceType)
                 : false,
             onSquareClick: ({ piece, square }) => {
+              if (!enableClickMove) {
+                onSquareClick?.(square, piece ? piece.pieceType : null);
+                return;
+              }
+
               if (!arePiecesDraggable) return;
 
               if (!selectedSquare) {

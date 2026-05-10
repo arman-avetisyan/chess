@@ -39,6 +39,7 @@ export default function App() {
     null,
   );
   const [analyzeVersion, setAnalyzeVersion] = useState(0);
+  const [setPositionVersion, setSetPositionVersion] = useState(0);
 
   const handleAnalyze = (payload: AnalyzePayload) => {
     setAnalyzePayload(payload);
@@ -88,7 +89,7 @@ export default function App() {
               />
             </TabPanel>
             <TabPanel value={toolsSubTab} index={1}>
-              <SetPosition />
+              <SetPosition key={setPositionVersion} />
             </TabPanel>
           </>
         )}
@@ -178,6 +179,7 @@ export default function App() {
               onClick={() => {
                 setTab(1);
                 setToolsSubTab(1);
+                setSetPositionVersion((v) => v + 1);
                 setDrawerOpen(false);
               }}
             >
