@@ -1,11 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Chess } from "chess.js";
 import { Box, Button } from "@mui/material";
 import { BoardLayout } from "../components/BoardLayout";
 import { ChessBoard } from "../components/ChessBoard";
+import { PromotionDialog } from "../components/PromotionDialog";
 import { useStockfish } from "../hooks/useStockfish";
 import { MoveHistory } from "../components/MoveHistory";
 import type { AnalyzePayload } from "../types/analyze";
+import type { PromotionChoice } from "../utils/promotion";
+import { isPromotionMove } from "../utils/promotion";
 import ScreenRotationAltIcon from "@mui/icons-material/ScreenRotationAlt";
 
 type GameWithStockfishProps = {
@@ -33,7 +36,13 @@ export function GameWithStockfish({ onAnalyze }: GameWithStockfishProps) {
   );
   const [gameOver, setGameOver] = useState(false);
   const [engineColor, setEngineColor] = useState<"w" | "b">("b");
+  const [pendingPromotion, setPendingPromotion] = useState<{
+    from: string;
+    to: string;
+    color: "w" | "b";
+  } | null>(null);
   const { ready, getBestMove } = useStockfish();
+  const boardAnchorRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (moves.length > 0) return;
@@ -62,6 +71,10 @@ export function GameWithStockfish({ onAnalyze }: GameWithStockfishProps) {
     setLastMove(previous ? { from: previous.from, to: previous.to } : null);
     setCurrentPly(ply);
   };
+
+  useEffect(() => {
+    setPendingPromotion(null);
+  }, [currentPly]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -128,13 +141,16 @@ export function GameWithStockfish({ onAnalyze }: GameWithStockfishProps) {
     }
   }, [ready, engineColor, moves.length, currentPly]);
 
-  const handleDrop = (source: string, target: string, piece: string) => {
-    if (currentPly !== moves.length) return false;
+  const commitMove = (
+    source: string,
+    target: string,
+    promotion?: PromotionChoice,
+  ) => {
     const gameCopy = new Chess(game.fen());
     const move = gameCopy.move({
       from: source,
       to: target,
-      promotion: piece[1].toLowerCase() === "p" ? "q" : undefined,
+      ...(promotion ? { promotion } : {}),
     });
     if (!move) return false;
     game.load(gameCopy.fen());
@@ -154,6 +170,20 @@ export function GameWithStockfish({ onAnalyze }: GameWithStockfishProps) {
     return true;
   };
 
+  const handleDrop = (source: string, target: string, _piece: string) => {
+    if (currentPly !== moves.length) return false;
+    const preview = new Chess(game.fen());
+    if (isPromotionMove(preview, source, target)) {
+      setPendingPromotion({
+        from: source,
+        to: target,
+        color: preview.turn(),
+      });
+      return false;
+    }
+    return commitMove(source, target);
+  };
+
   const squareStyles = lastMove
     ? {
         [lastMove.from]: { backgroundColor: "rgba(205, 210, 106, 0.8)" },
@@ -162,45 +192,63 @@ export function GameWithStockfish({ onAnalyze }: GameWithStockfishProps) {
     : {};
 
   return (
-    <BoardLayout
-      board={
-        <>
-          <ChessBoard
-            position={position}
-            onDrop={handleDrop}
-            boardOrientation={boardOrientation}
-            customSquareStyles={squareStyles}
-            customArrows={[]}
-          />
-          <ScreenRotationAltIcon
-            fontSize="small"
-            onClick={() =>
-              setBoardOrientation((o) => (o === "white" ? "black" : "white"))
-            }
-            sx={{ mt: 1 }}
-          />
-        </>
-      }
-      annotations={
-        <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-          <Box sx={{ flex: 1, minHeight: 0 }}>
-            <MoveHistory
-              moves={moves}
-              currentPly={currentPly}
-              onSelectPly={setBoardAtPly}
-            />
+    <>
+      <BoardLayout
+        board={
+          <>
+            <Box ref={boardAnchorRef} sx={{ display: "inline-block" }}>
+              <ChessBoard
+                position={position}
+                onDrop={handleDrop}
+                boardOrientation={boardOrientation}
+                customSquareStyles={squareStyles}
+                customArrows={[]}
+              />
+            </Box>
+            <Box>
+              <ScreenRotationAltIcon
+                fontSize="small"
+                onClick={() =>
+                  setBoardOrientation((o) => (o === "white" ? "black" : "white"))
+                }
+                sx={{ mt: 1 }}
+              />
+            </Box>
+          </>
+        }
+        annotations={
+          <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+            <Box sx={{ flex: 1, minHeight: 0 }}>
+              <MoveHistory
+                moves={moves}
+                currentPly={currentPly}
+                onSelectPly={setBoardAtPly}
+              />
+            </Box>
+            {gameOver && (
+              <Button
+                variant="contained"
+                onClick={() => onAnalyze?.({ fen: game.fen(), moves })}
+                sx={{ mt: 1 }}
+              >
+                Analyze
+              </Button>
+            )}
           </Box>
-          {gameOver && (
-            <Button
-              variant="contained"
-              onClick={() => onAnalyze?.({ fen: game.fen(), moves })}
-              sx={{ mt: 1 }}
-            >
-              Analyze
-            </Button>
-          )}
-        </Box>
-      }
-    />
+        }
+      />
+      <PromotionDialog
+        open={pendingPromotion !== null}
+        anchorEl={boardAnchorRef.current}
+        color={pendingPromotion?.color ?? "w"}
+        onClose={() => setPendingPromotion(null)}
+        onSelect={(choice) => {
+          if (!pendingPromotion) return;
+          const { from, to } = pendingPromotion;
+          setPendingPromotion(null);
+          commitMove(from, to, choice);
+        }}
+      />
+    </>
   );
 }

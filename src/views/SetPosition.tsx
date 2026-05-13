@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Chess } from "chess.js";
 import {
   Alert,
@@ -31,8 +31,11 @@ import { BoardLayout, BOARD_WIDTH } from "../components/BoardLayout";
 import { ChessBoard } from "../components/ChessBoard";
 import { EngineLines } from "../components/EngineLines";
 import { MoveHistory } from "../components/MoveHistory";
+import { PromotionDialog } from "../components/PromotionDialog";
 import { useStockfish } from "../hooks/useStockfish";
 import type { AnalyzeMove } from "../types/analyze";
+import type { PromotionChoice } from "../utils/promotion";
+import { isPromotionMove } from "../utils/promotion";
 import { getCustomPieces } from "../pieces";
 
 const customPieces = getCustomPieces();
@@ -56,6 +59,13 @@ export function SetPosition() {
   const [playing, setPlaying] = useState(false);
   const [mode, setMode] = useState<"setup" | "play" | "analyze">("setup");
   const [positionError, setPositionError] = useState<string | null>(null);
+  const [pendingPromotion, setPendingPromotion] = useState<{
+    from: string;
+    to: string;
+    color: "w" | "b";
+  } | null>(null);
+
+  const boardAnchorRef = useRef<HTMLDivElement | null>(null);
 
   const {
     ready,
@@ -134,6 +144,10 @@ export function SetPosition() {
     },
     [moves, startFen],
   );
+
+  useEffect(() => {
+    setPendingPromotion(null);
+  }, [currentPly, mode]);
 
   const startFromCurrentPosition = (nextMode: "play" | "analyze") => {
     const candidateFen = positionObjectToFen(setupPosition, turnToMove);
@@ -216,14 +230,18 @@ export function SetPosition() {
     return () => window.clearTimeout(t);
   }, [currentPly, mode, moves.length, playing, setBoardAtPly]);
 
-  const handleDrop = (source: string, target: string, piece: string) => {
+  const commitMove = (
+    source: string,
+    target: string,
+    promotion?: PromotionChoice,
+  ) => {
     if (currentPly !== moves.length) return false;
 
     const gameCopy = new Chess(game.fen());
     const move = gameCopy.move({
       from: source,
       to: target,
-      promotion: piece[1].toLowerCase() === "p" ? "q" : undefined,
+      ...(promotion ? { promotion } : {}),
     });
     if (!move) return false;
 
@@ -243,6 +261,21 @@ export function SetPosition() {
     setCurrentPly(nextMoves.length);
     setLastMove({ from: move.from, to: move.to });
     return true;
+  };
+
+  const handleDrop = (source: string, target: string, _piece: string) => {
+    if (currentPly !== moves.length) return false;
+
+    const preview = new Chess(game.fen());
+    if (isPromotionMove(preview, source, target)) {
+      setPendingPromotion({
+        from: source,
+        to: target,
+        color: preview.turn(),
+      });
+      return false;
+    }
+    return commitMove(source, target);
   };
 
   const handleSetupPieceDrop = ({
@@ -423,14 +456,16 @@ export function SetPosition() {
               </ChessboardProvider>
             ) : (
               <>
-                <ChessBoard
-                  position={position}
-                  onDrop={handleDrop}
-                  boardOrientation={boardOrientation}
-                  customSquareStyles={squareStyles}
-                  customArrows={engineEnabled ? bestMoveArrow : []}
-                  arePiecesDraggable={currentPly === moves.length}
-                />
+                <Box ref={boardAnchorRef} sx={{ display: "inline-block" }}>
+                  <ChessBoard
+                    position={position}
+                    onDrop={handleDrop}
+                    boardOrientation={boardOrientation}
+                    customSquareStyles={squareStyles}
+                    customArrows={engineEnabled ? bestMoveArrow : []}
+                    arePiecesDraggable={currentPly === moves.length}
+                  />
+                </Box>
                 <Box
                   sx={{
                     mt: 1,
@@ -541,6 +576,18 @@ export function SetPosition() {
           {positionError}
         </Alert>
       </Snackbar>
+      <PromotionDialog
+        open={pendingPromotion !== null}
+        anchorEl={boardAnchorRef.current}
+        color={pendingPromotion?.color ?? "w"}
+        onClose={() => setPendingPromotion(null)}
+        onSelect={(choice) => {
+          if (!pendingPromotion) return;
+          const { from, to } = pendingPromotion;
+          setPendingPromotion(null);
+          commitMove(from, to, choice);
+        }}
+      />
     </>
   );
 }

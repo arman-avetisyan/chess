@@ -4,6 +4,7 @@ import {
   useLayoutEffect,
   useMemo,
   useCallback,
+  useRef,
 } from "react";
 import { Chess } from "chess.js";
 import { Box, FormControlLabel, IconButton, Switch } from "@mui/material";
@@ -18,7 +19,10 @@ import { ChessBoard } from "../components/ChessBoard";
 import { EngineLines } from "../components/EngineLines";
 import { useStockfish } from "../hooks/useStockfish";
 import { MoveHistory } from "../components/MoveHistory";
+import { PromotionDialog } from "../components/PromotionDialog";
 import type { AnalyzeMove } from "../types/analyze";
+import type { PromotionChoice } from "../utils/promotion";
+import { isPromotionMove } from "../utils/promotion";
 import ScreenRotationAltIcon from "@mui/icons-material/ScreenRotationAlt";
 
 const EMPTY_ARROWS: [string, string][] = [];
@@ -64,6 +68,11 @@ export function AnalyzeGame({ initialFen, initialMoves }: AnalyzeGameProps) {
   /** Sync board to start of line (ply 0) before running Stockfish — avoids racing the worker before FEN is stable. */
   const [boardPrimed, setBoardPrimed] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [pendingPromotion, setPendingPromotion] = useState<{
+    from: string;
+    to: string;
+    color: "w" | "b";
+  } | null>(null);
   const {
     ready,
     lines,
@@ -74,6 +83,7 @@ export function AnalyzeGame({ initialFen, initialMoves }: AnalyzeGameProps) {
     setBestMoveArrow,
     error,
   } = useStockfish();
+  const boardAnchorRef = useRef<HTMLDivElement | null>(null);
 
   useLayoutEffect(() => {
     const navGame = new Chess(startFen);
@@ -109,6 +119,10 @@ export function AnalyzeGame({ initialFen, initialMoves }: AnalyzeGameProps) {
     },
     [startFen, moves],
   );
+
+  useEffect(() => {
+    setPendingPromotion(null);
+  }, [currentPly]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -153,14 +167,14 @@ export function AnalyzeGame({ initialFen, initialMoves }: AnalyzeGameProps) {
     return () => window.clearTimeout(t);
   }, [position, engineEnabled, ready, boardPrimed, getAnalysis]);
 
-  const handleDrop = useCallback(
-    (source: string, target: string, piece: string) => {
+  const commitMove = useCallback(
+    (source: string, target: string, promotion?: PromotionChoice) => {
       if (currentPly !== moves.length) return false;
       const gameCopy = new Chess(game.fen());
       const move = gameCopy.move({
         from: source,
         to: target,
-        promotion: piece[1].toLowerCase() === "p" ? "q" : undefined,
+        ...(promotion ? { promotion } : {}),
       });
       if (!move) return false;
       game.load(gameCopy.fen());
@@ -178,6 +192,23 @@ export function AnalyzeGame({ initialFen, initialMoves }: AnalyzeGameProps) {
       return true;
     },
     [currentPly, moves, game, setBoardAtPly],
+  );
+
+  const handleDrop = useCallback(
+    (source: string, target: string, _piece: string) => {
+      if (currentPly !== moves.length) return false;
+      const preview = new Chess(game.fen());
+      if (isPromotionMove(preview, source, target)) {
+        setPendingPromotion({
+          from: source,
+          to: target,
+          color: preview.turn(),
+        });
+        return false;
+      }
+      return commitMove(source, target);
+    },
+    [currentPly, game, commitMove],
   );
 
   const squareStyles = useMemo(
@@ -234,97 +265,113 @@ export function AnalyzeGame({ initialFen, initialMoves }: AnalyzeGameProps) {
   );
 
   return (
-    <BoardLayout
-      board={
-        <>
-          <ChessBoard
-            position={position}
-            onDrop={handleDrop}
-            boardOrientation={boardOrientation}
-            customSquareStyles={squareStyles}
-            customArrows={customArrows}
-            arePiecesDraggable={currentPly === moves.length}
-          />
-          <Box
-            sx={{
-              mt: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexWrap: "wrap",
-              gap: 0.5,
-            }}
-          >
-            <IconButton
-              size="small"
-              aria-label="Go to start"
-              disabled={currentPly === 0}
-              onClick={() => {
-                setPlaying(false);
-                setBoardAtPly(0);
+    <>
+      <BoardLayout
+        board={
+          <>
+            <Box ref={boardAnchorRef} sx={{ display: "inline-block" }}>
+              <ChessBoard
+                position={position}
+                onDrop={handleDrop}
+                boardOrientation={boardOrientation}
+                customSquareStyles={squareStyles}
+                customArrows={customArrows}
+                arePiecesDraggable={currentPly === moves.length}
+              />
+            </Box>
+            <Box
+              sx={{
+                mt: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexWrap: "wrap",
+                gap: 0.5,
               }}
             >
-              <SkipPreviousIcon fontSize="small" />
-            </IconButton>
-            <IconButton
-              size="small"
-              aria-label="Previous move"
-              disabled={currentPly === 0}
-              onClick={() => {
-                setPlaying(false);
-                setBoardAtPly(Math.max(0, currentPly - 1));
-              }}
-            >
-              <FastRewindIcon fontSize="small" />
-            </IconButton>
-            <IconButton
-              size="small"
-              aria-label={playing ? "Pause autoplay" : "Play moves"}
-              disabled={moves.length === 0 || currentPly >= moves.length}
-              color={"default"}
-              onClick={() => setPlaying((p) => !p)}
-            >
-              {playing ? (
-                <PauseIcon fontSize="small" />
-              ) : (
-                <PlayArrowIcon fontSize="small" />
-              )}
-            </IconButton>
-            <IconButton
-              size="small"
-              aria-label="Next move"
-              disabled={currentPly >= moves.length}
-              onClick={() => {
-                setPlaying(false);
-                setBoardAtPly(Math.min(moves.length, currentPly + 1));
-              }}
-            >
-              <FastForwardIcon fontSize="small" />
-            </IconButton>
-            <IconButton
-              size="small"
-              aria-label="Go to last move"
-              disabled={currentPly >= moves.length}
-              onClick={() => {
-                setPlaying(false);
-                setBoardAtPly(moves.length);
-              }}
-            >
-              <SkipNextIcon fontSize="small" />
-            </IconButton>
-            <IconButton
-              size="small"
-              aria-label="Flip board"
-              onClick={() =>
-                setBoardOrientation((o) => (o === "white" ? "black" : "white"))
-              }
-            >
-              <ScreenRotationAltIcon fontSize="small" />
-            </IconButton>
-          </Box>
-        </>
-      }
-      annotations={annotations}
-    />
+              <IconButton
+                size="small"
+                aria-label="Go to start"
+                disabled={currentPly === 0}
+                onClick={() => {
+                  setPlaying(false);
+                  setBoardAtPly(0);
+                }}
+              >
+                <SkipPreviousIcon fontSize="small" />
+              </IconButton>
+              <IconButton
+                size="small"
+                aria-label="Previous move"
+                disabled={currentPly === 0}
+                onClick={() => {
+                  setPlaying(false);
+                  setBoardAtPly(Math.max(0, currentPly - 1));
+                }}
+              >
+                <FastRewindIcon fontSize="small" />
+              </IconButton>
+              <IconButton
+                size="small"
+                aria-label={playing ? "Pause autoplay" : "Play moves"}
+                disabled={moves.length === 0 || currentPly >= moves.length}
+                color={"default"}
+                onClick={() => setPlaying((p) => !p)}
+              >
+                {playing ? (
+                  <PauseIcon fontSize="small" />
+                ) : (
+                  <PlayArrowIcon fontSize="small" />
+                )}
+              </IconButton>
+              <IconButton
+                size="small"
+                aria-label="Next move"
+                disabled={currentPly >= moves.length}
+                onClick={() => {
+                  setPlaying(false);
+                  setBoardAtPly(Math.min(moves.length, currentPly + 1));
+                }}
+              >
+                <FastForwardIcon fontSize="small" />
+              </IconButton>
+              <IconButton
+                size="small"
+                aria-label="Go to last move"
+                disabled={currentPly >= moves.length}
+                onClick={() => {
+                  setPlaying(false);
+                  setBoardAtPly(moves.length);
+                }}
+              >
+                <SkipNextIcon fontSize="small" />
+              </IconButton>
+              <IconButton
+                size="small"
+                aria-label="Flip board"
+                onClick={() =>
+                  setBoardOrientation((o) => (o === "white" ? "black" : "white"))
+                }
+              >
+                <ScreenRotationAltIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          </>
+        }
+        annotations={annotations}
+      />
+      <PromotionDialog
+        open={pendingPromotion !== null}
+        anchorEl={boardAnchorRef.current}
+        color={pendingPromotion?.color ?? "w"}
+        onClose={() => setPendingPromotion(null)}
+        onSelect={(choice) => {
+          if (!pendingPromotion) return;
+          const { from, to } = pendingPromotion;
+          setPendingPromotion(null);
+          commitMove(from, to, choice);
+        }}
+      />
+    </>
   );
 }

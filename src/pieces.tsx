@@ -7,7 +7,7 @@ import React from "react";
 const CARDINAL_BASE =
   "https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cardinal";
 
-const pieceUrls: Record<string, string> = {
+export const pieceUrls: Record<string, string> = {
   wK: `${CARDINAL_BASE}/wK.svg`,
   wQ: `${CARDINAL_BASE}/wQ.svg`,
   wR: `${CARDINAL_BASE}/wR.svg`,
@@ -43,4 +43,8 @@ export function getCustomPieces(): Record<
     ),
   ]);
   return Object.fromEntries(entries);
+}
+
+export function getPieceSvgUrl(pieceType: string): string | undefined {
+  return pieceUrls[pieceType];
 }
