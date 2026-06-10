@@ -170,14 +170,12 @@ export function AnalyzeGame({ initialFen, initialMoves }: AnalyzeGameProps) {
   const commitMove = useCallback(
     (source: string, target: string, promotion?: PromotionChoice) => {
       if (currentPly !== moves.length) return false;
-      const gameCopy = new Chess(game.fen());
-      const move = gameCopy.move({
+      const move = game.move({
         from: source,
         to: target,
         ...(promotion ? { promotion } : {}),
       });
       if (!move) return false;
-      game.load(gameCopy.fen());
       const nextMoves = [
         ...moves,
         {
@@ -259,6 +257,9 @@ export function AnalyzeGame({ initialFen, initialMoves }: AnalyzeGameProps) {
             setPlaying(false);
             setBoardAtPly(ply);
           }}
+          isDraw={game.isDraw()}
+          isCheckmate={game.isCheckmate()}
+          turn={game.turn()}
         />
       </Box>
     </Box>

@@ -111,15 +111,12 @@ export function GameWithStockfish({ onAnalyze }: GameWithStockfishProps) {
     const to = bestMove.slice(2, 4);
     const promotionChar = bestMove.length > 4 ? bestMove[4] : undefined;
 
-    const gameCopy = new Chess(game.fen());
-    const move = gameCopy.move({
+    const move = game.move({
       from,
       to,
       promotion: promotionChar as "q" | "r" | "b" | "n" | undefined,
     });
     if (!move) return;
-
-    game.load(gameCopy.fen());
     const nextMoves = [
       ...latestMoves,
       {
@@ -131,7 +128,7 @@ export function GameWithStockfish({ onAnalyze }: GameWithStockfishProps) {
     ];
     setMoves(nextMoves);
     setBoardAtPly(nextMoves.length, nextMoves);
-    if (gameCopy.isGameOver()) setGameOver(true);
+    if (game.isGameOver()) setGameOver(true);
   };
 
   useEffect(() => {
@@ -146,14 +143,12 @@ export function GameWithStockfish({ onAnalyze }: GameWithStockfishProps) {
     target: string,
     promotion?: PromotionChoice,
   ) => {
-    const gameCopy = new Chess(game.fen());
-    const move = gameCopy.move({
+    const move = game.move({
       from: source,
       to: target,
       ...(promotion ? { promotion } : {}),
     });
     if (!move) return false;
-    game.load(gameCopy.fen());
     const nextMoves = [
       ...moves,
       {
@@ -165,7 +160,7 @@ export function GameWithStockfish({ onAnalyze }: GameWithStockfishProps) {
     ];
     setMoves(nextMoves);
     setBoardAtPly(nextMoves.length, nextMoves);
-    if (gameCopy.isGameOver()) setGameOver(true);
+    if (game.isGameOver()) setGameOver(true);
     void makeEngineMove(nextMoves, nextMoves.length);
     return true;
   };
@@ -223,6 +218,9 @@ export function GameWithStockfish({ onAnalyze }: GameWithStockfishProps) {
                 moves={moves}
                 currentPly={currentPly}
                 onSelectPly={setBoardAtPly}
+                isDraw={game.isDraw()}
+                isCheckmate={game.isCheckmate()}
+                turn={game.turn()}
               />
             </Box>
             {gameOver && (

@@ -10,6 +10,9 @@ type MoveHistoryProps = {
   currentPly: number;
   onSelectPly: (ply: number) => void;
   title?: string;
+  isDraw: boolean;
+  isCheckmate: boolean;
+  turn: string;
 };
 
 export function MoveHistory({
@@ -17,6 +20,9 @@ export function MoveHistory({
   currentPly,
   onSelectPly,
   title = "Game history",
+  isDraw,
+  isCheckmate,
+  turn,
 }: MoveHistoryProps) {
   return (
     <Box
@@ -85,6 +91,11 @@ export function MoveHistory({
           }, [])
         )}
       </Box>
+      {(isDraw || isCheckmate) && (
+        <Typography variant="subtitle2" sx={{ alignSelf: "center" }}>
+          {isDraw ? "1/2-1/2" : (isCheckmate && turn === "b") ? "1-0" : "0-1"}
+        </Typography>
+      )}
     </Box>
   );
 }

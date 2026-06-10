@@ -237,8 +237,7 @@ export function SetPosition() {
   ) => {
     if (currentPly !== moves.length) return false;
 
-    const gameCopy = new Chess(game.fen());
-    const move = gameCopy.move({
+    const move = game.move({
       from: source,
       to: target,
       ...(promotion ? { promotion } : {}),
@@ -255,8 +254,7 @@ export function SetPosition() {
       },
     ];
     setPlaying(false);
-    setGame(gameCopy);
-    setPosition(gameCopy.fen());
+    setPosition(game.fen());
     setMoves(nextMoves);
     setCurrentPly(nextMoves.length);
     setLastMove({ from: move.from, to: move.to });
@@ -371,6 +369,9 @@ export function SetPosition() {
               setPlaying(false);
               setBoardAtPly(ply);
             }}
+            isDraw={game.isDraw()}
+            isCheckmate={game.isCheckmate()}
+            turn={game.turn()}
           />
         </Box>
       </Box>

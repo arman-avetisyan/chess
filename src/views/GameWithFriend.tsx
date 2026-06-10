@@ -89,14 +89,12 @@ export function GameWithFriend({ onAnalyze }: GameWithFriendProps) {
     target: string,
     promotion?: PromotionChoice,
   ) => {
-    const gameCopy = new Chess(game.fen());
-    const move = gameCopy.move({
+    const move = game.move({
       from: source,
       to: target,
       ...(promotion ? { promotion } : {}),
     });
     if (!move) return false;
-    game.load(gameCopy.fen());
     const nextMoves = [
       ...moves,
       {
@@ -108,7 +106,7 @@ export function GameWithFriend({ onAnalyze }: GameWithFriendProps) {
     ];
     setMoves(nextMoves);
     setBoardAtPly(nextMoves.length, nextMoves);
-    if (gameCopy.isGameOver()) setGameOver(true);
+    if (game.isGameOver()) setGameOver(true);
     return true;
   };
 
@@ -141,6 +139,9 @@ export function GameWithFriend({ onAnalyze }: GameWithFriendProps) {
           moves={moves}
           currentPly={currentPly}
           onSelectPly={setBoardAtPly}
+          isDraw={game.isDraw()}
+          isCheckmate={game.isCheckmate()}
+          turn={game.turn()}
         />
       </Box>
       {gameOver && (
