@@ -69,7 +69,7 @@ export function MoveHistory({
                   size="small"
                   variant={currentPly === whitePly ? "contained" : "text"}
                   onClick={() => onSelectPly(whitePly)}
-                  sx={{ minWidth: 54, justifyContent: "flex-start" }}
+                  sx={{ minWidth: 54, justifyContent: "flex-start", textTransform: 'none' }}
                 >
                   {whiteMove.san}
                 </Button>
@@ -78,7 +78,7 @@ export function MoveHistory({
                     size="small"
                     variant={currentPly === blackPly ? "contained" : "text"}
                     onClick={() => onSelectPly(blackPly)}
-                    sx={{ minWidth: 54, justifyContent: "flex-start" }}
+                    sx={{ minWidth: 54, justifyContent: "flex-start", textTransform: 'none' }}
                   >
                     {blackMove.san}
                   </Button>
