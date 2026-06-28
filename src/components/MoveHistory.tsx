@@ -1,5 +1,6 @@
-import type { ReactNode } from "react";
-import { Box, Button, Typography } from "@mui/material";
+import { useEffect, useRef, type ReactNode } from "react";
+import { Box, Button, Typography, useMediaQuery, useTheme } from "@mui/material";
+
 
 type HistoryMove = {
   san: string;
@@ -24,6 +25,23 @@ export function MoveHistory({
   isCheckmate,
   turn,
 }: MoveHistoryProps) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
+
+  useEffect(() => {
+    if (!isDesktop) return;
+    const activeElement = scrollContainerRef.current?.querySelector(
+      '[data-active="true"]',
+    );
+
+    if (activeElement) {
+      activeElement.scrollIntoView({
+        block: "nearest",
+      });
+    }
+  }, [currentPly]);
+
   return (
     <Box
       sx={{
@@ -36,7 +54,7 @@ export function MoveHistory({
       <Typography variant="subtitle2" sx={{ px: 1, pt: 1, pb: 0.5 }}>
         {title}
       </Typography>
-      <Box sx={{ overflowY: "auto", px: 1, pb: 1 }}>
+      <Box ref={scrollContainerRef} sx={{ overflowY: "auto", px: 1, pb: 1 }}>
         {moves.length === 0 ? (
           <Typography variant="body2" color="text.secondary">
             No moves yet
@@ -68,6 +86,7 @@ export function MoveHistory({
                 <Button
                   size="small"
                   variant={currentPly === whitePly ? "contained" : "text"}
+                  data-active={currentPly === whitePly}
                   onClick={() => onSelectPly(whitePly)}
                   sx={{ minWidth: 54, justifyContent: "flex-start", textTransform: 'none' }}
                 >
@@ -77,6 +96,7 @@ export function MoveHistory({
                   <Button
                     size="small"
                     variant={currentPly === blackPly ? "contained" : "text"}
+                    data-active={currentPly === blackPly}
                     onClick={() => onSelectPly(blackPly)}
                     sx={{ minWidth: 54, justifyContent: "flex-start", textTransform: 'none' }}
                   >
