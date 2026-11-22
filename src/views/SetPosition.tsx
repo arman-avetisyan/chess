@@ -351,7 +351,7 @@ export function SetPosition() {
               size="small"
             />
           }
-          label="Chess engine"
+          label="Stockfish 19 Lite"
         />
         <EngineLines
           lines={lines}

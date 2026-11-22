@@ -236,7 +236,7 @@ export function AnalyzeGame({ initialFen, initialMoves }: AnalyzeGameProps) {
             size="small"
           />
         }
-        label="Chess engine"
+        label="Stockfish 19 Lite"
       />
       <EngineLines
         lines={lines}
