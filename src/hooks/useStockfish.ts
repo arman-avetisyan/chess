@@ -14,7 +14,7 @@ type QueuedAnalysis = {
 };
 
 export function useStockfish(
-  workerUrl: string = `${import.meta.env.BASE_URL}stockfish-18-lite-single.js`,
+  workerUrl: string = `${import.meta.env.BASE_URL}stockfish-19-lite-single.js`,
 ) {
   const [ready, setReady] = useState(false);
   const [lines, setLines] = useState<EngineLine[]>([]);

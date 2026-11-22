@@ -4,7 +4,7 @@ const path = require("path");
 const binDir = path.join(__dirname, "..", "node_modules", "stockfish", "bin");
 const publicDir = path.join(__dirname, "..", "public");
 
-const files = ["stockfish-18-lite-single.js", "stockfish-18-lite-single.wasm"];
+const files = ["stockfish-19-lite-single.js", "stockfish-19-lite-single.wasm"];
 
 if (!fs.existsSync(publicDir)) {
   fs.mkdirSync(publicDir, { recursive: true });
